@@ -78,6 +78,7 @@
   </body>
  <script>
   var WEBAPP_SPREADSHEET_ID = <?!= JSON.stringify(typeof spreadsheetId !== 'undefined' ? spreadsheetId : '') ?>;
+  var WEBAPP_URL = <?!= JSON.stringify(typeof webAppUrl !== 'undefined' ? webAppUrl : '') ?>;
 
 
   function showMessage(text, type) {
@@ -149,9 +150,11 @@
       `;
 
       setTimeout(function() {
-        window.location.href = window.location.origin + window.location.pathname +
-          '?spreadsheetId=' + encodeURIComponent(dataResult.spreadsheetId);
-      }, 1000);
+      var posUrl = WEBAPP_URL + '?spreadsheetId=' + encodeURIComponent(dataResult.spreadsheetId);
+      window.top.location.href = posUrl;
+    }, 1000);
+
+
     })
     .withFailureHandler(function(e) {
       showMessage((e && e.message) ? e.message : 'Erro ao ativar licenca.');
@@ -160,9 +163,10 @@
     })
     .apiCall({
       action: 'saveUtilisateur',
-      spreadsheetId: 'login',
+      spreadsheetId: WEBAPP_SPREADSHEET_ID || 'login',
       data: data
     });
+
 }
 
 
