@@ -1,0 +1,26 @@
+{
+  "timeZone": "Africa/Lagos",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "AzulGestaoBiblio",
+        "libraryId": "1maOTJMRp4EpDRX8b_Gfk0Dx5pHi-1Ah2g-uBwmvZLd4JuuVDrtk7fspO",
+        "version": "0",
+        "developmentMode": true
+      }
+    ]
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.container.ui",
+    "https://www.googleapis.com/auth/spreadsheets"
+
+  ],
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "ANYONE"
+  }
+}
