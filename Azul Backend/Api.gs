@@ -1,4 +1,6 @@
 const ROUTES = {
+  getHtml: data => getHtml(data),
+
   garantirPrimeiraInicializacao: data => AzulGestaoBiblio.garantirPrimeiraInicializacao(data),
 
   getDashboardData: data => AzulGestaoBiblio.getDashboardData(data),
@@ -51,8 +53,8 @@ const ROUTES = {
   activarModoEdicao: data => AzulGestaoBiblio.activarModoEdicao(data),
   reinicializarTudo: data => AzulGestaoBiblio.reinicializarTudo(data),
 
-  verification: data => verification(),
-  saveUtilisateur: data => saveUtilisateur(data.nom, data.numero, data.email, data.licence, data.statut)
+  verification: data => verification(data && data.spreadsheetId),
+  saveUtilisateur: data => saveUtilisateur(data.nom, data.numero, data.email, data.licence, data.statut, data.spreadsheetId)
 };
 
 function doGet(e) {
@@ -68,12 +70,14 @@ function doGet(e) {
   if (spreadsheetId && spreadsheetId !== "login") {
     setClientSpreadsheetId(spreadsheetId);
 
-    const licence = verification(spreadsheetId); // ← passe l'ID directement
+    const licence = verification(spreadsheetId);
 
     if (licence && licence.ok === true) {
-      // ✅ Direct vers POS_Core — ZERO init ici
       const template = HtmlService.createTemplateFromFile("POS_Core");
       template.spreadsheetId = spreadsheetId;
+      template.webAppUrl = ScriptApp.getService().getUrl();
+
+
       return template.evaluate()
         .setTitle("Azul Gestao")
         .addMetaTag("viewport", "width=device-width, initial-scale=1.0");
@@ -81,11 +85,34 @@ function doGet(e) {
   }
 
   const template = HtmlService.createTemplateFromFile("POS_login");
-  template.spreadsheetId = "";
+  template.spreadsheetId = spreadsheetId || "";
+  template.webAppUrl = ScriptApp.getService().getUrl();
+
   return template.evaluate()
     .setTitle("Activation Azul Gestao")
     .addMetaTag("viewport", "width=device-width, initial-scale=1.0");
 }
+
+function getHtml(data) {
+  data = data || {};
+
+  const page = String(data.page || "").trim();
+  let fileName = "POS_login";
+
+  if (page === "main" || page === "pos" || page === "POS") {
+    fileName = "POS_core";
+  }
+
+  const template = HtmlService.createTemplateFromFile(fileName);
+  template.spreadsheetId = CLIENT_SPREADSHEET_ID || "";
+  template.webAppUrl = ScriptApp.getService().getUrl();
+
+  return {
+    html: template.evaluate().getContent()
+  };
+}
+
+
 
 function apiCall(req) {
   try {
@@ -99,7 +126,6 @@ function apiCall(req) {
       throw new Error("spreadsheetId manquant");
     }
 
-
     if (!ROUTES[action]) {
       throw new Error("Action inconnue : " + action);
     }
@@ -107,6 +133,8 @@ function apiCall(req) {
     if (spreadsheetId && spreadsheetId !== "login") {
       setClientSpreadsheetId(spreadsheetId);
     }
+
+    data.spreadsheetId = spreadsheetId;
 
     return {
       ok: true,
@@ -121,6 +149,7 @@ function apiCall(req) {
     };
   }
 }
+
 
 function doPost(e) {
   try {
@@ -139,4 +168,13 @@ function jsonResponse(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getMobileSafeWebAppUrl_() {
+  const url = ScriptApp.getService().getUrl();
+
+  return url.replace(
+    "https://script.google.com/macros/",
+    "https://script.google.com/a/~/macros/"
+  );
 }
