@@ -34,11 +34,17 @@ function getSpreadsheetIdByLicence(cle) {
   return "";
 }
 
-function saveUtilisateur(nom, numero, email, licence, statut) {
+function saveUtilisateur(nom, numero, email, licence, statut, clientSpreadsheetId) {
   const sh = getLicenceSheet_();
   const data = sh.getDataRange().getValues();
 
   const cle = String(licence || "").trim().toUpperCase().replace(/\s+/g, "");
+
+  let currentSpreadsheetId = String(clientSpreadsheetId || CLIENT_SPREADSHEET_ID || "").trim();
+
+  if (currentSpreadsheetId === "login") {
+    currentSpreadsheetId = "";
+  }
 
   if (!cle) {
     return {
@@ -50,24 +56,27 @@ function saveUtilisateur(nom, numero, email, licence, statut) {
   for (let i = 1; i < data.length; i++) {
     const rowCle = String(data[i][0] || "").trim().toUpperCase().replace(/\s+/g, "");
     const rowStatus = String(data[i][5] || "").trim().toLowerCase();
-    const rowSpreadsheetId = String(data[i][6] || "").trim();
+
+    let rowSpreadsheetId = String(data[i][6] || "").trim();
+
+    if (rowSpreadsheetId === "login") {
+      rowSpreadsheetId = "";
+    }
 
     if (rowCle === cle) {
-      if (rowStatus !== "active") {
+      if (rowStatus && rowStatus !== "active") {
         return {
           ok: false,
           message: "Licença inativa. Solicite uma nova chave."
         };
       }
 
-      let spreadsheetId = rowSpreadsheetId;
+      let spreadsheetId = rowSpreadsheetId || currentSpreadsheetId;
 
       if (!spreadsheetId) {
         const clientName = String(nom || data[i][2] || "Cliente").trim() || "Cliente";
         const ss = SpreadsheetApp.create("Azul Gestao - " + clientName + " - " + cle);
         spreadsheetId = ss.getId();
-
-        sh.getRange(i + 1, 7).setValue(spreadsheetId);
       }
 
       sh.getRange(i + 1, 2).setValue(new Date());
@@ -75,12 +84,9 @@ function saveUtilisateur(nom, numero, email, licence, statut) {
       sh.getRange(i + 1, 4).setValue(email || "");
       sh.getRange(i + 1, 5).setValue(numero || "");
       sh.getRange(i + 1, 6).setValue("active");
+      sh.getRange(i + 1, 7).setValue(spreadsheetId);
 
       setClientSpreadsheetId(spreadsheetId);
-
-      AzulGestaoBiblio.garantirPrimeiraInicializacao({
-        stockMode: "boutique"
-      });
 
       return {
         ok: true,
@@ -96,8 +102,17 @@ function saveUtilisateur(nom, numero, email, licence, statut) {
   };
 }
 
-function verification() {
-  const spreadsheetId = CLIENT_SPREADSHEET_ID;
+
+function verification(spreadsheetId) {
+  spreadsheetId = String(spreadsheetId || CLIENT_SPREADSHEET_ID || "").trim();
+
+  if (!spreadsheetId || spreadsheetId === "login") {
+    return {
+      ok: false,
+      message: "Spreadsheet ID manquant"
+    };
+  }
+
   const sh = getLicenceSheet_();
   const data = sh.getDataRange().getValues();
 
@@ -118,6 +133,7 @@ function verification() {
     message: "Licence non active ou non trouvée"
   };
 }
+
 
 function getOrCreateSpreadsheetIdByLicence(cle) {
   cle = String(cle || "").trim().toUpperCase().replace(/\s+/g, "");
